@@ -1,0 +1,955 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+<title>mAgIDS</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport"
+	content="width=device-width, initial-scale=1, maximum-scale=1">
+<link rel="stylesheet" href="css/mAgIDS.min.css" />
+<link rel="stylesheet" href="css/jquery.mobile.structure-1.4.0.min.css" />
+<link rel="stylesheet" href="css/jquery.mobile-1.4.0.min.css" />
+<style type="text/css">
+span.stars,span.stars span {
+	display: block;
+	background: url(images/stars.png) 0 -16px repeat-x;
+	width: 80px;
+	height: 16px;
+}
+
+span.stars span {
+	background-position: 0 0;
+}
+.loader {
+	left: 0px;
+	top: 0px;
+	width: 50%;
+	height: 50%;
+	z-index: 9999;
+	background: url('images/_notes/ajax-loader.gif') 50% 50% no-repeat
+		rgb(249, 249, 249);
+}
+</style>
+<script type="text/javascript" src="js/jquery-1.9.1.min.js" data-prefetch></script>
+<script>
+$( document ).bind( "mobileinit", function() {
+    // Make your jQuery Mobile framework configuration changes here!
+ 	$.support.cors = true;
+    $.mobile.allowCrossDomainPages = true;
+    $.mobile.phonegapNavigationEnabled = true
+    $.mobile.loader.prototype.options.text = "Loading Page....";
+    $.mobile.loader.prototype.options.textVisible = false;
+    $.mobile.loader.prototype.options.theme = "f";
+    $.mobile.loader.prototype.options.html = "";
+});
+
+</script>
+<script type="text/javascript" src="js/jquery.mobile-1.4.0.min.js"
+	data-prefetch></script>
+<script type="text/javascript" src="js/myscripts.js" data-prefetch></script>
+<script type="text/javascript" src="cordova.js" data-prefetch></script>
+<script type="text/JavaScript">
+function MM_openBrWindow(theURL,winName,features) { //v2.0
+  window.open(theURL,winName,features);
+}
+</script>
+<script type="text/javascript">
+
+document.addEventListener("deviceready", onDeviceReady, false);
+function onDeviceReady() {
+		var devversion=device.version;
+		var osversion=device.platform;
+//		alert("Lokesh");
+//		alert(devversion+"----"+osversion);
+
+		checkConnection();
+		 navigator.splashscreen.hide(); 
+	}
+	
+		function checkConnection() {
+		 var networkState = navigator.connection.type;
+
+	   	var states = {};
+    	states[Connection.UNKNOWN]  = 'Unknown connection';
+    	states[Connection.ETHERNET] = 'Ethernet connection';
+    	states[Connection.WIFI]     = 'WiFi connection';
+    	states[Connection.CELL_2G]  = 'Cell 2G connection';
+    	states[Connection.CELL_3G]  = 'Cell 3G connection';
+    	states[Connection.CELL_4G]  = 'Cell 4G connection';
+    	states[Connection.CELL]     = 'Cell generic connection';
+    	states[Connection.NONE]     = 'No network connection';
+
+		    if (states[networkState]=="No network connection"){
+			    alert(" No Network Connection mAgIDS will Exit Now!");
+
+		    	if (navigator.app) {
+		            navigator.app.exitApp();
+		        }
+		        else if (navigator.device) {
+		            navigator.device.exitApp();
+		        }
+		    }
+		}
+	$(document).ajaxStart(function() {
+	  $.mobile.loading( 'show', {
+	    text: "mAgIDS is Loading Data...",
+	    textonly: false,
+	    textVisible: true,
+	    theme: 'f',
+	    html: ""
+	  });
+	});
+	
+	$(document).ajaxStop(function() {
+	  $.mobile.loading('hide');
+	});
+	
+	$(document).on('click','.showloadmsg', function() {
+		  $.mobile.loading('show',{
+				  text: "mAgIDS is Loading Data...",
+				    textonly: false,
+				    textVisible: true,
+				    theme: 'f',
+				    html: ""
+				  });
+		});
+	$(document).on('click','.showuploadmsg', function() {
+		  $.mobile.loading('show',{
+				  text: "mAgIDS is uploading Image...",
+				    textonly: false,
+				    textVisible: true,
+				    theme: 'f',
+				    html: ""
+				  });
+		});
+	
+	$(document).ready(function(){
+		var myLocalLang,myStateID,myDistrictID,myBlockID,myUID,mypwd,mSID,u,p,ses,lng,lat;
+		var resourceID,ag_pr_name,ag_process_name,componentID;
+		var my_media = null;
+    	var mediaTimer = null;
+    	var media_file = null;
+    	var tid=null;
+    	
+//		var myWebHost="http://192.168.1.2:8098/mAgIDS/mobile/";
+		var myWebHost="http://mobileagriculture.in/mobile/";
+		function mPage(eleid){
+		//	alert(eleid);
+			$.mobile.changePage($(eleid), {
+				  allowSamePageTransition : true,
+				  transition : 'none',
+				  showLoadMsg : true,
+				  reloadPage : true
+				 });
+		}	
+		if(window.localStorage["u"] != undefined && window.localStorage["p"] != undefined) {  
+			u = window.localStorage["u"];  
+			p = window.localStorage["p"];
+			myLogin(u,p);
+			}
+		else{
+			mPage('#startpage');
+		}
+	myInit();
+	
+	function loadMyPage(lclstrid,url,elementid,lclstrname){
+		var d = new Date();
+		var n = d.getFullYear();
+		var myfooter='www.mobileagriculture.in </div><br> 2014-'+n+'. All rights reserved.<a id=mAbt href=# data-role=button data-help=abtpage class=ui-btn-right data-icon=info>About</a>';
+		$('div[data-role="footer"]').html(myfooter);
+		$('div[data-role="footer"]').trigger('create');
+		$(elementid).html("");
+		$(elementid).trigger('create');
+		if (lclstrname)
+		{
+//			localStorage.removeItem(lclstrname);
+			localStorage.removeItem(lclstrname);
+			localStorage.setItem(lclstrname,lclstrid);
+		}
+		$.get(url+lclstrid, function(data) {
+		//	alert(data)
+			if (device.platform="Android" && device.version< "4.2"){
+				$(elementid).html(pb_conv(data,myLocalLang));			
+			} 
+			else{
+				$(elementid).html(data);
+			}
+			$(elementid).html(data);
+			$(elementid).trigger('create');
+			$(elementid).on('load',function(){		
+				$.mobile.loading( 'hide');
+			});
+			myInit();
+		});
+	}
+
+	function myLogin(nu,np){
+		var opt="username="+nu+"&password="+np;
+//		alert(myWebHost+'jsp/logon.jsp?'+opt);
+	 	$.get(myWebHost+'jsp/logon.jsp?'+opt,function(data){
+			var L,s;
+			for (var i=0;i<data.length;i++)
+				{
+				if(data.substring(i,i+1)=="L")
+					{
+					L=data.substring(i,i+7);
+					s=data.substring(i+7,data.length)
+					break;
+					}
+				}
+			if(L == "LoginOK") 
+			{
+				window.localStorage["u"] = nu;
+				window.localStorage["p"] = np;        
+				window.sessionStorage["ses"] = s;
+				ses=s;
+				u=nu;
+		
+				if(window.localStorage["tid"]!=null){
+					mPage('#transid');
+				}else{			
+					mPage('#pagelang');
+				}
+				myInit();
+		    	return false;
+			} 
+			else 
+			{
+				alert("Your login failed");
+				$('#myLoginFail').html("Login failed. Please Login again");
+				$('#myLoginFail').trigger('create');
+				myInit();
+				mPage('#startpage');
+				myInit();
+				return false;
+			}
+		});
+	}
+	function myReg(nu,np){
+		var opt="regname="+nu+"&password="+np;
+ 		$.get(myWebHost+'jsp/reg.jsp?'+opt,function(data){
+//			alert(data);
+ 			var R,s1;
+			for (var i=0;i<data.length;i++){
+				if(data.substring(i,i+1)=="R"){
+					R=data.substring(i,i+7);
+					s1=data.substring(i+7,data.length)
+					break;
+				}
+			}
+//			alert(R);
+			if(R == "RegisOK"){
+				window.localStorage["u"] = nu;
+				window.localStorage["p"] = np;        
+				window.sessionStorage["ses"] = s1;
+				ses=s1;
+				u=nu;
+				mPage('#pagelang');
+		    	return false;
+			} 
+			else{
+				if(R == "RegisDo"){
+					window.localStorage["u"] = nu;
+					window.localStorage["p"] = np;        
+					window.sessionStorage["ses"] = s1;
+					ses=s1;
+					u=nu;
+					mPage('#pagelang');
+			    	return false;
+				}
+			else{
+					alert("Your Registration failed");
+					$('#myRegFail').html("Registration failed. Please Register Later");
+					$('#myRegFail').trigger('create');
+					myInit();
+					mPage('#startpage');
+					myInit();
+					return false;
+				}
+		}	
+		myInit();
+	});
+	
+}	
+	
+	function scriptHelp(lnk,lng){
+		if (lng==null){lng="EN";}
+		urll=myWebHost+'help/'+lnk+'.html';
+//		alert(urll);
+		$("#div_help").load(urll);
+		$.get(urll, function(data) {
+		//	alert(data);
+			$('#div_help').html(data);
+			$('#div_help').trigger('create');
+		});
+		mPage('#pagehelp');
+	}
+
+	function uploadPhoto(mediaFile) {
+//		alert(mediaFile);
+        var options = new FileUploadOptions();
+        options.fileKey="uploadFile";
+        options.fileName=mediaFile.substr(mediaFile.lastIndexOf('/')+1);
+        options.mimeType="image/jpeg";
+        options.headers={Connection:"close"};
+        var params = {};
+        params.blockcode = window.localStorage["myBlockID"];
+        params.u = window.localStorage["u"];
+        options.params = params;
+  		var ft = new FileTransfer();
+        ft.onprogress = function(progressEvent) {
+            if (progressEvent.lengthComputable) {
+// 	          	var perc=loadingStatus.setPercentage(progressEvent.loaded / progressEvent.total);
+ 	          	var perc = Math.round(100*progressEvent.loaded / progressEvent.total);
+        		$('#fileuploader').html(perc+" % of image is uploded");
+        		$('#fileuploader').trigger('create');          	
+            } else {
+              loadingStatus.increment();
+            }
+        };
+        ft.upload(mediaFile, encodeURI(myWebHost+"jsp/UplServ.jsp"), winImage, failImage, options);
+//        ft.close();           
+        $(".showuploadmsg").hide();
+		$.mobile.loading('hide');    	
+    }
+    function winImage(r) {
+        console.log("Code = " + r.responseCode);
+        console.log("Response = " + r.response);
+        console.log("Sent = " + r.bytesSent);
+        $(".showuploadmsg").hide();
+		$.mobile.loading('hide');    	
+        $("#cam").show();
+    }
+
+    function failImage(error) {
+        alert("An error has occurred: Code = " + error.code);
+        console.log("upload error source " + error.source);
+        console.log("upload error target " + error.target);
+    }
+    
+	function captureSuccess(mediaFiles) {
+/*		alert(mediaFiles);
+		alert(FILE_URI);
+	    var i, len;
+	    for (i = 0, len = mediaFiles.length; i < len; i += 1) {
+	        path = mediaFiles[i].fullPath,
+	        name = mediaFiles[i].name;
+	        uploadPhoto(path);
+		    }       
+			*/
+	        uploadPhoto(mediaFiles);
+	}
+	function captureError(error) {
+	    var msg = 'An error occurred during capture: ' + error.code;
+	    navigator.notification.alert(msg, null, 'Uh oh!');
+	}
+	function captureImage() {
+//	    navigator.device.capture.captureImage(captureSuccess, captureError, {limit: 1});
+		navigator.camera.getPicture(captureSuccess, captureError, { quality: 50, destinationType: Camera.DestinationType.FILE_URI });
+	}
+	$(document).on('pagebeforeshow','#transid', function(){
+		myLocalLang=window.localStorage["myLangs"];
+		ag_process_name=window.localStorage["ag_process_sel"];
+		componentID=window.localStorage["Component"];
+		resourceID=window.localStorage["resourceID"];
+		tid=window.localStorage["tid"];
+		myBlockID=window.localStorage["myBlockID"];
+		mypaging();
+	});
+	function mypaging(){
+		var othParameter="&tid="+tid+"&ag_pr_id="+ag_process_name+"&ag_pr_comp_id="+componentID;
+		var urltid=myWebHost+'jsp/tid_analysis.jsp?language='+myLocalLang+othParameter;
+		loadMyPage('',urltid,'#div_tcid',"");
+	}
+
+
+	function myInit()
+	{
+		$.fn.stars = function() {
+			return $(this).each(function() {
+			$(this).html($('<span />').width(Math.max(0, (Math.min(5, parseFloat($(this).html())))) * 16));
+			});
+		}
+		function playAudio(myFile)	
+		{
+			if (my_media!=null || media_file==myFile){
+				my_media.play();			
+			}else{
+				if (my_media){stopAudio();}
+				media_file=myFile;
+				var src=myWebHost+"audio/"+myLocalLang+"/"+myFile;
+				my_media = new Media(src, onMediaSuccess, onMediaError);
+				my_media.play();
+				mediaTimer = setInterval(function () {
+				    my_media.getCurrentPosition(
+				        function (position) {
+				            if (position > -1) {
+				                console.log((position) + " sec");
+					            }
+				        },
+				        function (e) {
+				            console.log("Error getting pos=" + e);
+				        }
+					);
+				}, 1000);
+			}
+		}	  	
+		function stopAudio() {
+		    	if (my_media) {
+		            my_media.stop();
+		        }
+		    	if (this.my_media) {
+		            this.my_media.stop();
+		        }
+		        clearInterval(mediaTimer);
+		        mediaTimer = null;
+		        my_media=null;
+			}
+	   	function onMediaSuccess() {
+		            console.log("playAudio():Audio Success");
+	    }
+	    function onMediaError(error) {
+		            alert('code: '    + error.code    + '\n' +
+		                  'message: ' + error.message + '\n');
+		}
+	$('select').on("change",function(){
+			$.mobile.loading( 'show', {
+				  text: "Loading.....",
+				  theme: "f", 
+				  textonly: true 
+				  });	
+			var mySel =$(this).attr("ID");
+			var mySelTxt=$(this).val();
+			switch (true){
+			case (mySel==="resourceid"):
+				loadMyPage(mySelTxt,myWebHost+'jsp/agri_process_sel.jsp?language='+myLocalLang+'&resourceid=','#agri_process_name',"resourceID");
+			    resourceID=mySelTxt;
+				break;
+			case (mySel==="agri_process_name"):
+				loadMyPage(mySelTxt,myWebHost+'jsp/component_sel.jsp?language='+myLocalLang+'&resourceid='+resourceID+'&agri_process_name=','#component',"ag_process_sel");
+				ag_process_name=mySelTxt;
+				break;
+			case (mySel==="component"):
+				loadMyPage(mySelTxt,'','',"Component");
+				componentID=mySelTxt;
+				break;
+			default:
+				break;
+			}
+			$.mobile.loading( 'hide');	
+		});
+	$("a").unbind().click(function() {
+			//Stuff
+			});
+		$("a").on("click",function(){
+			$.mobile.loading( 'show', {
+				  text: "Loading.....",
+				  theme: "f", 
+				  textonly: true 
+				  });	
+			var myID = $(this).attr("id");
+				switch (true) {
+				case (myID==="mHelp"):
+					hlp=($(this).attr("data-help"));
+					scriptHelp(hlp,myLocalLang);				
+					break;
+				case (myID==="mlogin"):
+					mPage('#loginpage');
+					break;
+				case (myID==="mAbt"):
+					mPage('#pageabout');
+					break;
+				case (myID==="reg"):
+					myReg($('#regname').val(),'');
+					break;
+				case (myID==="fget"):
+					mPage('#forget');
+					break;
+				case (myID==="login"):
+					myLogin($('#username').val(),'');
+	
+					break;
+				case (myID==="state"):
+					$("#nsgeo1").html("");
+					$("#nsgeo1").trigger('create');
+					loadMyPage(myLocalLang,myWebHost+'jsp/state.jsp?language=','#nsgeocontent',"myLangs");
+					mPage('#geolocation1');
+					break;
+				case (myID==="EN" || myID==="HN" || myID==="PB"):
+				//	alert(myID);
+					window.localStorage["myLangs"] = myID;
+					function errorHandler(err) {
+					  if(err.code == 1) {
+					    	alert("Error: Access is denied!");
+					  	} else if( err.code == 2) {
+					    alert("Error: Position is unavailable!");
+					  	} 	else {
+					  		alert("Error: Unable to get the Longitude and Lattitude!");	  		
+					  	}
+						$("#nsgeo1").html("");
+						$("#nsgeo1").trigger('create');
+				//		alert('Lokesh-ErrorHandler');
+						loadMyPage(myID,myWebHost+'jsp/state.jsp?language=','#nsgeocontent',"myLangs");
+					}
+					function mylatlong (pos){
+				  		var lat = pos.coords.latitude;
+				  		var lng = pos.coords.longitude;
+//					alert("Latitude:"+lat+" ;Longitude:"+lng);
+						$("#nsgeocontent").html("");
+						$("#nsgeocontent").trigger('create');
+//					alert('Lokesh-mylatlong');
+				  		loadMyPage('',myWebHost+'jsp/longlat.jsp?language='+myID+'&longi='+lng+'&lati='+lat,'#nsgeo1',"")
+					}
+					navigator.geolocation.getCurrentPosition (mylatlong,errorHandler,{timeout:60000});
+					mPage('#geolocation1');
+					myLocalLang=myID;		
+					break;
+				case (myID>=0 && myID<100):
+					loadMyPage(myID,myWebHost+'jsp/district.jsp?language='+myLocalLang+'&'+'statename=','#ndgeocontent',"myStateID");
+					myStateID=myID;
+					mPage('#geoDistrict');
+					break;
+				case (myID>=100 && myID<10000):
+					loadMyPage(myID,myWebHost+'jsp/block.jsp?language='+myLocalLang+'&'+'districtname=','#nbgeocontent',"myDistrictID");
+					myDistrictID=myID;		
+					mPage('#geoBlock');
+					break;
+				case (myID>=10000 && myID<1000000):
+					loadMyPage(myID,myWebHost+'jsp/next.jsp?language='+myLocalLang+'&blockcode=','#blocknxt',"myBlockID");
+					myBlockID=myID;
+					mPage('#BlockSel');
+					localStorage.setItem('myBlockID',myBlockID);
+					break;
+				case (myID==="AgPrSelBtn"):
+					var urlAgPrSel=myWebHost+'jsp/part_sel.jsp?language='+myLocalLang+'&'+$("#AgPrSel").serialize();
+					loadMyPage('',urlAgPrSel,'#myActivity',"");
+					mPage('#ActPage');
+					break;
+				case (myID==="AgPrCompLocBtn"):
+					var AgPrCompLocstr="";
+					$('#AgPrCompLocChkBx ').find('.AgPrCompLocClass').each(function(){
+						if($(this).prop('checked'))
+							{
+								AgPrCompLocstr=AgPrCompLocstr+"&ag_pr_comp_l_id="+ $(this).val()+"";									
+							}
+					});
+					var urlAgPrCompLoc=myWebHost+'jsp/rule_sel.jsp?language='+myLocalLang+AgPrCompLocstr;
+					loadMyPage('',urlAgPrCompLoc,'#myRuleSel',"");
+					mPage('#symptoms');
+					break;
+				case (myID==="AgPrRuleSelBtn"):
+					var AgPrRuleSelstr="";
+					$('#AgPrRuleSelChkBx ').find('.AgPrRuleSelClass').each(function(){
+						if($(this).prop('checked'))
+							{
+								AgPrRuleSelstr=AgPrRuleSelstr+"&ruleid="+ $(this).val()+"";									
+							}
+					});
+					//resourceID,ag_pr_name,componentID;
+					var othParameter="&resourceid="+resourceID+"&sessionID="+ses+"&blockID="+myBlockID+"&user="+u+"&agprID="+ag_process_name+"&agprcompID="+componentID;
+					var urlAgPrRuleSel=myWebHost+'jsp/analysis.jsp?language='+myLocalLang+othParameter+AgPrRuleSelstr;
+					loadMyPage('',urlAgPrRuleSel,'#myDiagnosis',"");
+//					mPage('#symptoms');
+					mPage('#diagnosis');
+					break;
+				case (myID==="AgAnalysisBtn"):
+					var AgAnalysisstr="";
+					$('#AgAnalysisrdBtn').find('.AgAnalysisClass').each(function(){
+						if($(this).prop('checked'))
+							{
+								imga=($(this).attr("data-imga"));
+								tid=($(this).attr("data-tid"));
+								window.localStorage["tid"] = tid;
+								AgAnalysisstr=AgAnalysisstr+"&ag_activity_id="+ $(this).val()+"&imga="+ imga;									
+							}
+					});
+					var urlGtTreat=myWebHost+'jsp/GetTreatment.jsp?tid='+tid+'&language='+myLocalLang+"&resourceid="+resourceID+"&agprID="+ag_process_name+"&agprcompID="+componentID+AgAnalysisstr;
+					localStorage.setItem('tid',tid);
+//					alert(urlGtTreat);
+					loadMyPage('',urlGtTreat,'#myAnalysis',"");
+					mPage('#Fdiagnosis')
+					break;
+				case (myID==="cam"):
+					captureImage();
+				  	$.mobile.loading('hide');
+					break;
+				case (myID==="audrule"):
+					playAudio($(this).attr("href"));
+					break;
+				case (myID==="audrulestop"):
+					stopAudio();
+					break;
+				default:
+					break;
+				}
+				$.mobile.loading('hide');	
+			});
+		}
+	});
+</script>
+</head>
+<body>
+	<div id="loader" style="display: none">
+		<img src="images/_notes/ajax-loader.gif">
+	</div>
+	<div data-role="page" id="startpage" data-theme="f">
+		<div data-role="header" data-theme="f" data-icon="gear">
+			<h1>mAgIDS</h1>
+   			<a id="mHelp" href="#" data-role="button" data-help="startpage" class="ui-btn-right" data-icon="info">Help</a>
+		</div>
+		<div id="myStart" data-role="content" data-theme="f">
+			<div id="start">
+				<a id="mlogin" data-role="button" href="#loginpage">Login</a> <a
+					id="regi" data-role="button" href="#register">Sign Up</a>
+			</div>
+		</div>
+		<div data-role="footer" data-position="fixed" align="center"
+			data-theme="f">
+			www.mobileagriculture.in <br> 2014 . All rights reserved.
+   			<a id="mAbt" href="#" data-role="button" data-help="abtpage" class="ui-btn-right" data-icon="info">About</a>
+	</div>
+
+		</div>
+	</div>
+
+	<div data-role="page" id="loginpage" data-theme="f">
+		<div data-role="header" data-theme="f" data-icon="gear">
+			<a href="#" data-rel="back" data-icon="arrow-l">Back</a>
+			<h1>mAgIDS</h1>
+			<div class="ui-btn-right" data-role="controlgroup" data-mini="true" data-type="horizontal">
+     			<a href="#pagelang" data-role="button" data-icon="home" data-iconpos="notext">Home</a>
+      			<a id="mHelp" href="#" data-role="button" data-help="loginpage" data-iconpos="notext" data-icon="info">Help</a>
+    		</div>
+    	</div>
+		<div id="mylogin" data-role="content" data-theme="f">
+			<div id="myLoginFail"></div>
+			<div id="myLoginDiv" data-role="fieldcontain">
+				<form id="loginform" name="loginform" action="#" method="post">
+					<div id="loginDiv" data-role="fieldcontain">
+						<label for="username">Mobile No. </label> <input type="text"
+							size="11" maxlength="11" name="username" id="username">
+					</div>
+					<div id="submitDiv" data-role="fieldcontain">
+						<a data-role="button" id="login">Login</a>
+					</div>
+				</form>
+			</div>
+		</div>
+		<div data-role="footer" data-position="fixed" align="center"
+			data-theme="f">
+			www.mobileagriculture.in <br> 2014. All rights reserved.
+
+   			<a id="mAbt" href="#" data-role="button" data-help="abtpage" class="ui-btn-right" data-icon="info">About</a>
+    			</div>
+	</div>
+
+	<div data-role="page" id="pagelang" data-theme="f"
+		data-add-back-btn="true">
+		<div data-role="header" data-theme="f" data-icon="gear">
+			<a href="#" data-rel="back" data-icon="arrow-l">Back</a>
+			<h1>mAgIDS</h1>
+			<div class="ui-btn-right" data-role="controlgroup" data-mini="true" data-type="horizontal">
+     			<a href="#pagelang" data-role="button" data-icon="home" data-iconpos="notext">Home</a>
+      			<a id="mHelp" href="#" data-role="button" data-help="pagelang" data-iconpos="notext" data-icon="info">Help</a>
+    		</div>
+		</div>
+		<div id="page1content" data-role="content" data-theme="f">
+			<div id="langu">
+				<a id="EN" class='showloadmsg' data-role="button"
+					href="#geolocation1"> Select English Language</a> <a id="HN"
+					class='showloadmsg' data-role="button" href="#geolocation1">
+					हिंदी भाषा का चयन करें</a> <a id="PB" data-role="button"
+					class='showloadmsg' href="#geolocation1"> ਪੰਜਾਬੀ ਭਾਸ਼ਾ ਚੁਣੋ </a>
+			</div>
+		</div>
+		<div data-role="footer" data-position="fixed" align="center"
+			data-theme="f">
+			www.mobileagriculture.in <br> 2014. All rights reserved.
+
+   			<a id="mAbt" href="#" data-role="button" data-help="abtpage" class="ui-btn-right" data-icon="info">About</a>
+    			</div>
+	</div>
+
+	<div data-role="page" id="geolocation1" data-theme="f"
+		data-add-back-btn="true">
+		<div data-role="header" data-theme="f" data-position="fixed" data-icon="gear">
+			<a href="#" data-rel="back" data-icon="arrow-l">Back</a>
+			<h1>mAgIDS</h1>
+			<div class="ui-btn-right" data-role="controlgroup" data-mini="true" data-type="horizontal">
+     			<a href="#pagelang" data-role="button" data-icon="home" data-iconpos="notext">Home</a>
+      			<a id="mHelp" href="#" data-role="button" data-help="geolocation1" data-iconpos="notext" data-icon="info">Help</a>
+    		</div>
+			</div>
+		<div id="sgeocontent" data-role="content" data-theme="f">
+			<div id="nsgeocontent"></div>
+			<div id="nsgeo1"></div>
+		</div>
+		<div data-role="footer" data-position="fixed" align="center"
+			data-theme="f">
+					www.mobileagriculture.in <br> 2014. All rights reserved.
+
+   			<a id="mAbt" href="#" data-role="button" data-help="abtpage" class="ui-btn-right" data-icon="info">About</a>
+    			</div>
+	</div>
+
+	<div data-role="page" id="geoDistrict" data-theme="f"
+		data-add-back-btn="true">
+		<div data-role="header" data-theme="f" data-icon="gear" data-position="fixed">
+			<a href="#" data-rel="back" data-icon="arrow-l">Back</a>
+			<h1>mAgIDS</h1>
+			<div class="ui-btn-right" data-role="controlgroup" data-mini="true" data-type="horizontal">
+     			<a href="#pagelang" data-role="button" data-icon="home" data-iconpos="notext">Home</a>
+      			<a id="mHelp" href="#" data-role="button" data-help="geoDistrict" data-iconpos="notext" data-icon="info">Help</a>
+    		</div>
+		</div>
+		<div id="dgeocontent" data-role="content" data-theme="f">
+			<div id="ndgeocontent"></div>
+		</div>
+		<div data-role="footer" data-position="fixed" align="center"
+			data-theme="f">
+			www.mobileagriculture.in <br> 2014. All rights reserved.
+
+   			<a id="mAbt" href="#" data-role="button" data-help="abtpage" class="ui-btn-right" data-icon="info">About</a>
+    			</div>
+	</div>
+
+	<div data-role="page" id="geoBlock" data-theme="f"
+		data-add-back-btn="true">
+		<div data-role="header" data-theme="f" data-icon="gear" data-position="fixed">
+			<a href="#" data-rel="back" data-icon="arrow-l">Back</a>
+			<h1>mAgIDS</h1>
+			<div class="ui-btn-right" data-role="controlgroup" data-mini="true" data-type="horizontal">
+     			<a href="#pagelang" data-role="button" data-icon="home" data-iconpos="notext">Home</a>
+      			<a id="mHelp" href="#" data-role="button" data-help="geoBlock" data-iconpos="notext" data-icon="info">Help</a>
+    		</div>
+		</div>
+		<div id="bgeocontent" data-role="content" data-theme="f">
+			<div id="nbgeocontent"></div>
+		</div>
+		<div data-role="footer" data-position="fixed" align="center"
+			data-theme="f">
+			www.mobileagriculture.in <br> 2014. All rights reserved.
+
+   			<a id="mAbt" href="#" data-role="button" data-help="abtpage" class="ui-btn-right" data-icon="info">About</a>
+    			</div>
+	</div>
+
+	<div data-role="page" id="BlockSel" data-theme="f"
+		data-add-back-btn="true">
+		<div data-role="header" data-theme="f" data-icon="gear" data-position="fixed">
+			<a href="#" data-rel="back" data-icon="arrow-l">Back</a>
+			<h1>mAgIDS</h1>
+			<div class="ui-btn-right" data-role="controlgroup" data-mini="true" data-type="horizontal">
+     			<a href="#pagelang" data-role="button" data-icon="home" data-iconpos="notext">Home</a>
+      			<a id="mHelp" href="#" data-role="button" data-help="BlockSel" data-iconpos="notext" data-icon="info">Help</a>
+    		</div>
+		</div>
+		<div id="blocknext" data-role="content" data-theme="f">
+			<div id="blknxt"></div>
+			<div id="blocknxt"></div>
+		</div>
+		<div data-role="footer" data-position="fixed" align="center"
+			data-theme="f">
+			www.mobileagriculture.in <br> 2014. All rights reserved.
+
+   			<a id="mAbt" href="#" data-role="button" data-help="abtpage" class="ui-btn-right" data-icon="info">About</a>
+    			</div>
+	</div>
+
+	<div data-role="page" id="ActPage" data-theme="f"
+		data-add-back-btn="true">
+		<div data-role="header" data-theme="f" data-position="fixed" data-icon="gear">
+			<a href="#" data-rel="back" data-icon="arrow-l">Back</a>
+			<h1>mAgIDS</h1>
+			<div class="ui-btn-right" data-role="controlgroup" data-mini="true" data-type="horizontal">
+     			<a href="#pagelang" data-role="button" data-icon="home" data-iconpos="notext">Home</a>
+      			<a id="mHelp" href="#" data-role="button" data-help="ActPage" data-iconpos="notext" data-icon="info">Help</a>
+    		</div>
+		</div>
+		<div id="activity" data-role="content" data-theme="f">
+			<div id="myActivity"></div>
+		</div>
+		<div data-role="footer" data-position="fixed" align="center"
+			data-theme="f">
+			www.mobileagriculture.in <br> 2014. All rights reserved.
+
+   			<a id="mAbt" href="#" data-role="button" data-help="abtpage" class="ui-btn-right" data-icon="info">About</a>
+    			</div>
+	</div>
+
+	<div data-role="page" id="part_select" data-add-back-btn="true"
+		data-position="fixed" data-theme="f">
+		<div data-role="header" data-theme="f" data-icon="gear" data-position="fixed">
+			<a href="#" data-rel="back" data-icon="arrow-l">Back</a>
+			<h1>mAgIDS</h1>
+			<div class="ui-btn-right" data-role="controlgroup" data-mini="true" data-type="horizontal">
+     			<a href="#pagelang" data-role="button" data-icon="home" data-iconpos="notext">Home</a>
+      			<a id="mHelp" href="#" data-role="button" data-help="part_select" data-iconpos="notext" data-icon="info">Help</a>
+    		</div>
+		</div>
+		<div id="partsel" data-role="content" data-theme="f">
+			<div id="partsele"></div>
+		</div>
+		<div data-role="footer" data-position="fixed" align="center"
+			data-theme="f">
+			www.mobileagriculture.in <br> 2014. All rights reserved.
+
+   			<a id="mAbt" href="#" data-role="button" data-help="abtpage" class="ui-btn-right" data-icon="info">About</a>
+    			</div>
+	</div>
+
+	<div data-role="page" id="symptoms" data-theme="f"
+		data-add-back-btn="true">
+		<div data-role="header" data-theme="f" data-icon="gear" data-position="fixed">
+			<a href="#" data-rel="back" data-icon="arrow-l">Back</a>
+			<h1>mAgIDS</h1>
+			<div class="ui-btn-right" data-role="controlgroup" data-mini="true" data-type="horizontal">
+     			<a href="#pagelang" data-role="button" data-icon="home" data-iconpos="notext">Home</a>
+      			<a id="mHelp" href="#" data-role="button" data-help="symptoms" data-iconpos="notext" data-icon="info">Help</a>
+    		</div>
+		</div>
+		<div id="myRuleSele" data-role="content" data-theme="f">
+			<div id="myRuleSel"></div>
+		</div>
+		<div data-role="footer" data-position="fixed" align="center"
+			data-theme="f">
+			www.mobileagriculture.in <br> 2014. All rights reserved.
+
+   			<a id="mAbt" href="#" data-role="button" data-help="abtpage" class="ui-btn-right" data-icon="info">About</a>
+    			</div>
+	</div>
+
+	<div data-role="page" id="diagnosis" data-theme="f"
+		data-add-back-btn="true">
+		<div data-role="header" data-theme="f" data-icon="gear" data-position="fixed">
+			<a href="#" data-rel="back" data-icon="arrow-l">Back</a>
+			<h1>mAgIDS</h1>
+			<div class="ui-btn-right" data-role="controlgroup" data-mini="true" data-type="horizontal">
+     			<a href="#pagelang" data-role="button" data-icon="home" data-iconpos="notext">Home</a>
+      			<a id="mHelp" href="#" data-role="button" data-help="diagnosis" data-iconpos="notext" data-icon="info">Help</a>
+    		</div>
+		</div>
+		<div id="myDiagnosisRule" data-role="content" data-theme="f">
+			<div id="myDiagnosis"></div>
+		</div>
+		<div data-role="footer" data-position="fixed" align="center"
+			data-theme="f">
+			www.mobileagriculture.in <br> 2014. All rights reserved.
+
+   			<a id="mAbt" href="#" data-role="button" data-help="abtpage" class="ui-btn-right" data-icon="info">About</a>
+    			</div>
+	</div>
+
+	<div data-role="page" id="Fdiagnosis" data-theme="f"
+		data-add-back-btn="true">
+		<div data-role="header" data-theme="f" data-icon="gear" data-position="fixed">
+			<a href="#" data-rel="back" data-icon="arrow-l">Back</a>
+			<h1>mAgIDS</h1>
+			<div class="ui-btn-right" data-role="controlgroup" data-mini="true" data-type="horizontal">
+     			<a href="#pagelang" data-role="button" data-icon="home" data-iconpos="notext">Home</a>
+      			<a id="mHelp" href="#" data-role="button" data-help="Fdiagnosis" data-iconpos="notext" data-icon="info">Help</a>
+    		</div>
+		</div>
+		<div id="myAnalysisRule" data-role="content" data-theme="f">
+			<div id="myAnalysis"></div>
+		</div>
+		<div data-role="footer" data-position="fixed" align="center"
+			data-theme="f">
+			www.mobileagriculture.in <br> 2014. All rights reserved.
+
+   			<a id="mAbt" href="#" data-role="button" data-help="abtpage" class="ui-btn-right" data-icon="info">About</a>
+    			</div>
+	</div>
+
+	<div data-role="page" id="register" data-theme="f">
+		<div data-role="header" data-theme="f" data-icon="gear"
+			data-position="fixed">
+			<h1>mAgIDS</h1>
+		</div>
+		<div id="myRegFail"></div>
+		<div id="regStart" data-role="content" data-theme="f">
+			<div id="start">Register Your Mobile number with us</div>
+			<div id="myRegDiv" data-role="fieldcontain">
+				<form id="regform" name="regform" action="#" method="post">
+					<div id="regDiv" data-role="fieldcontain">
+						<label for="regname">Mobile No. </label> <input type="text"
+							size="11" maxlength="11" name="regname" id="regname">
+					</div>
+					<div id="submitDiv" data-role="fieldcontain">
+						<a data-role="button" id="reg">Register</a>
+					</div>
+				</form>
+			</div>
+		</div>
+		<div data-role="footer" data-position="fixed" align="center"
+			data-theme="f">
+			www.mobileagriculture.in <br> 2014. All rights reserved.
+
+   			<a id="mAbt" href="#" data-role="button" data-help="abtpage" class="ui-btn-right" data-icon="info">About</a>
+    			</div>
+	</div>
+
+	<div data-role="page" id="transid" data-theme="f">
+		<div data-role="header" data-theme="f" data-icon="gear"
+			data-position="fixed">
+			<a href="#" data-rel="back" data-icon="arrow-l">Back</a>
+			<h1>mAgIDS</h1>
+			<div class="ui-btn-right" data-role="controlgroup" data-mini="true" data-type="horizontal">
+     			<a href="#pagelang" data-role="button" data-icon="home" data-iconpos="notext">Home</a>
+      			<a id="mHelp" href="#" data-role="button" data-help="transid" data-iconpos="notext" data-icon="info">Help</a>
+    		</div>
+		</div>
+		<div id="t_c_id" data-role="content" data-theme="f">
+			<div id="div_tcid"></div>
+		</div>
+		<div data-role="footer" data-position="fixed" align="center"
+			data-theme="f">
+			www.mobileagriculture.in <br> 2014. All rights reserved.
+
+   			<a id="mAbt" href="#" data-role="button" data-help="abtpage" class="ui-btn-right" data-icon="info">About</a>
+    			</div>
+	</div>
+
+	<div data-role="page" id="pagehelp" data-theme="f">
+		<div data-role="header" data-theme="f" data-icon="gear"
+			data-position="fixed">
+			<a href="#" data-rel="back" data-icon="arrow-l">Back</a>
+			<h1>mAgIDS</h1>
+			<div class="ui-btn-right" data-role="controlgroup" data-mini="true" data-type="horizontal">
+     			<a href="#pagelang" data-role="button" data-icon="home" data-iconpos="notext">Home</a>
+      			<a id="mHelp" href="#" data-role="button" data-help="pagehelp" data-iconpos="notext" data-icon="info">Help</a>
+    		</div>
+		</div>
+		<div id="myhelpcontent" data-role="content" data-theme="f">
+			<b>
+				<div id="div_help"></div>
+			</b>
+		</div>
+		<div data-role="footer" data-position="fixed" align="center"
+			data-theme="f">
+			www.mobileagriculture.in <br> 2014. All rights reserved.
+
+   			<a id="mAbt" href="#" data-role="button" data-help="abtpage" class="ui-btn-right" data-icon="info">About</a>
+    			</div>
+	</div>
+	<div data-role="page" id="pageabout" data-theme="f">
+		<div data-role="header" data-theme="f" data-icon="gear"
+			data-position="fixed">
+			<a href="#" data-rel="back" data-icon="arrow-l">Back</a>
+			<h1>mAgIDS</h1>
+			<div class="ui-btn-right" data-role="controlgroup" data-mini="true" data-type="horizontal">
+     			<a href="#pagelang" data-role="button" data-icon="home" data-iconpos="notext">Home</a>
+      			<a id="mHelp" href="#" data-role="button" data-help="pagehelp" data-iconpos="notext" data-icon="info">Help</a>
+    		</div>
+		</div>
+		<div id="myhelpcontent" data-role="content" data-theme="f">
+			<b>
+				<div id="div_about">'<strong>mAgIDS</strong>' is an output of thesis submitted for the fulfillment of the requirement of PhD research work carried out at Panjab University, Chandigarh by Lokesh Jain, Assitant Professor, School of Electrical Engineering and Information Technology, Punjab Agricultural University, Ludhiana, under the supervision of Dr. Harish Kumar, Associate Professor, University Instittute of Engineering and Technology, and Dr. R. K. Singla, Professor, Department of Computer Applications, Panjab University, Chandigarh.</div>
+			</b>
+		</div>
+		<div data-role="footer" data-position="fixed" align="center"
+			data-theme="f">
+			www.mobileagriculture.in <br> 2014. All rights reserved.
+    			</div>
+	</div>
+</body>
+</html>
