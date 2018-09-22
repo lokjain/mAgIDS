@@ -5,7 +5,7 @@
         Mobile Based Agricultural Information Dissemination System
     </description>
     <author email="lokjain@pau.edu" href="http://www.mobileagriculture.in">
-        Dr. Lokesh Jain, SEEIT, PAU, Ludhiana
+        Dr. Lokesh Jain, DEEIT, PAU, Ludhiana
     </author>
     <content src="index.html" />
     <access origin="*" />
@@ -34,7 +34,6 @@
 	<preference name="SplashScreenDelay" value="1000" />
     <preference name="AutoHideSplashScreen" value="true" />
     <engine name="android" spec="^6.3.0" />
-
     <engine name="ios" spec="^4.4.0" />
     <plugin name="cordova-plugin-camera" spec="^2.4.1" />
     <plugin name="cordova-plugin-file" spec="^4.3.3" />
